@@ -1,8 +1,8 @@
 %define smartmetroot /smartmet
 
 Name:           smartmet-data-gts-sounding
-Version:        17.10.3
-Release:        2%{?dist}.fmi
+Version:        17.10.4
+Release:        1%{?dist}.fmi
 Summary:        SmartMet Data WMO TEMP Format (FM-35)
 Group:          System Environment/Base
 License:        MIT
@@ -48,6 +48,7 @@ cleaner -maxfiles 2 '_sounding.sqd' %{smartmetroot}/editor/in
 
 # Clean incoming TEMP data older than 7 days (7 * 24 * 60 = 10080 min)
 find /smartmet/data/incoming/gts/sounding -type f -mmin +10080 -delete
+find /smartmet/data/incoming/gts/sounding-bufr -type f -mmin +10080 -delete
 EOF
 
 install -m 755 %_topdir/SOURCES/smartmet-data-gts-sounding/dosounding.php %{buildroot}%{smartmetroot}/run/data/sounding_gts/bin/
