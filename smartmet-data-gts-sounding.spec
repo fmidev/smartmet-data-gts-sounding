@@ -12,6 +12,7 @@ BuildArch:	noarch
 
 Requires:	smartmet-qdtools
 Requires:	bzip2
+Requires:	pbzip2
 Requires:	php
 
 
@@ -25,7 +26,7 @@ mkdir $RPM_BUILD_ROOT
 cd $RPM_BUILD_ROOT
 
 mkdir -p .%{smartmetroot}/cnf/cron/{cron.d,cron.hourly}
-mkdir -p .%{smartmetroot}/data/incoming/gts/sounding
+mkdir -p .%{smartmetroot}/data/incoming/gts/{sounding,sounding-bufr}
 mkdir -p .%{smartmetroot}/editor/in
 mkdir -p .%{smartmetroot}/tmp/data/sounding
 mkdir -p .%{smartmetroot}/logs/data
@@ -33,6 +34,7 @@ mkdir -p .%{smartmetroot}/run/data/sounding_gts/bin
 
 cat > %{buildroot}%{smartmetroot}/cnf/cron/cron.d/sounding-gts.cron <<EOF
 */20 * * * * /smartmet/run/data/sounding_gts/bin/dosounding.php > /smartmet/logs/data/sounding-gts.log 2>&1
+*/20 * * * * /smartmet/run/data/sounding_gts/bin/dosounding-bufr.sh
 EOF
 
 cat > %{buildroot}%{smartmetroot}/cnf/cron/cron.hourly/clean_data_gts_sounding <<EOF
@@ -41,12 +43,17 @@ cat > %{buildroot}%{smartmetroot}/cnf/cron/cron.hourly/clean_data_gts_sounding <
 cleaner -maxfiles 2 '_sounding.sqd' %{smartmetroot}/data/gts/sounding
 cleaner -maxfiles 2 '_sounding.sqd' %{smartmetroot}/editor/in
 
-# Clean incoming TEMP data older than 7 days (7 * 24 * 60 = 10080 min)
+# Clean BUFR sounding data
+cleaner -maxfiles 2 '_sounding_bufr.sqd' %{smartmetroot}/data/gts/sounding-bufr
+cleaner -maxfiles 2 '_sounding_bufr.sqd' %{smartmetroot}/editor/in
+
+# Clean incoming TEMP and BUFR sounding data older than 7 days (7 * 24 * 60 = 10080 min)
 find /smartmet/data/incoming/gts/sounding -type f -mmin +10080 -delete
 find /smartmet/data/incoming/gts/sounding-bufr -type f -mmin +10080 -delete
 EOF
 
 install -m 755 %_topdir/SOURCES/smartmet-data-gts-sounding/dosounding.php %{buildroot}%{smartmetroot}/run/data/sounding_gts/bin/
+install -m 755 %_topdir/SOURCES/smartmet-data-gts-sounding/dosounding-bufr.sh %{buildroot}%{smartmetroot}/run/data/sounding_gts/bin/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -56,6 +63,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) %{smartmetroot}/cnf/cron/cron.d/sounding-gts.cron
 %config(noreplace) %attr(0755,smartmet,smartmet) %{smartmetroot}/cnf/cron/cron.hourly/clean_data_gts_sounding
 %attr(2775,smartmet,gts)  %dir %{smartmetroot}/data/incoming/gts/sounding
+%attr(2775,smartmet,gts)  %dir %{smartmetroot}/data/incoming/gts/sounding-bufr
 %{smartmetroot}/*
 
 %changelog
