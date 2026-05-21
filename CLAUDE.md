@@ -5,33 +5,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repo is
 
 A small SmartMet data ingestion module distributed as a `noarch` RPM —
-sibling of `smartmet-data-gts-synop` but for upper-air sounding bulletins
-(WMO TEMP, FM-35). The conversion script is **PHP, not shell** (unusual
-for this family of packages), and there is no build step — the RPM
-just installs `dosounding.php` and a cron file.
+sibling of `smartmet-data-gts-synop` but for upper-air sounding bulletins.
+There is no build step; the RPM installs the two ingestion scripts and a
+cron file.
 
 ## Layout
 
-- `dosounding.php` — driven by cron every 20 min. Globs every file in the incoming dir, extracts `TTAA` and `TTBB` reports with regex (multi-line, ungreedy, terminated by `=`), deduplicates by (location, date, type), writes a sorted text concatenation, then runs `temp2qd` to produce a `.sqd` and copies it to both the data tree and the editor inbox.
-- `smartmet-data-gts-sounding.spec` — RPM packaging. Creates the `/smartmet/...` tree, the cron entry (every 20 min), and the hourly cleaner (`%{smartmetroot}/cnf/cron/cron.hourly/clean_data_gts_sounding`).
+- `dosounding.php` — text-TEMP path (FM-35). PHP because the conversion needs regex extraction of `TTAA`/`TTBB` blocks before `temp2qd` can parse them.
+- `dosounding-bufr.sh` — BUFR path. Plain bash; runs `bufrtoqd -C sounding --subsets` over the incoming dir.
+- `smartmet-data-gts-sounding.spec` — RPM packaging. Creates the `/smartmet/...` tree, the cron entry (both scripts every 20 min), and the hourly cleaner (`%{smartmetroot}/cnf/cron/cron.hourly/clean_data_gts_sounding`).
 
-## Runtime pipeline
+## Runtime pipelines
 
-1. Cron triggers `dosounding.php` every 20 minutes. Cron redirects all stdout/stderr to `/smartmet/logs/data/sounding-gts.log` — unlike the synop scripts the PHP itself does not handle log redirection.
+**Text TEMP (`dosounding.php`):**
+
+1. Cron triggers `dosounding.php` every 20 min. Cron redirects all stdout/stderr to `/smartmet/logs/data/sounding-gts.log` — unlike the BUFR script, the PHP does not handle log redirection.
 2. Read every file in `/smartmet/data/incoming/gts/sounding/`.
 3. Regex-extract `TTAA` and `TTBB` blocks (one per report), trimming whitespace.
-4. Group by `messages[location][date][type]` and emit them sorted by location → date → type, joined with CRLF, into `tmp/data/sounding/<timestamp>_gts_world_sounding.sqd.txt`.
-5. If the text file is non-empty: `temp2qd -t … > …sqd` in tmp.
-6. If the `.sqd` is non-empty: `rename` it into `/smartmet/data/gts/sounding/world/querydata/`, `cp` to `/smartmet/editor/in/`, `rm` the text file.
+4. Group by `messages[location][date][type]`, sort by location → date → type, join with CRLF into `tmp/data/sounding/<timestamp>_gts_world_sounding.sqd.txt`.
+5. Run `temp2qd -t …txt > …sqd` (arguments are `escapeshellarg`'d, exit code captured).
+6. If the `.sqd` is non-empty: `rename` it into `/smartmet/data/gts/sounding/world/querydata/`, `copy()` to `/smartmet/editor/in/`, `unlink()` the text file.
 
-The hourly cleaner keeps only the 2 most-recent `.sqd` files in the output and editor dirs and deletes incoming files older than 7 days.
+**BUFR (`dosounding-bufr.sh`):**
+
+1. Cron triggers `dosounding-bufr.sh` every 20 min. The script redirects stdout/stderr to `/smartmet/logs/data/sounding-bufr-gts.log` itself (via `exec &>` when `TERM=dumb`).
+2. `bufrtoqd -C sounding -p 1005,Sounding --subsets "$IN/" "$OUTFILE"` reads everything in `/smartmet/data/incoming/gts/sounding-bufr/` and writes a `.sqd` to tmp. `--subsets` matters for messages carrying multiple soundings.
+3. If the `.sqd` is non-empty: `pbzip2 -k` the file, `mv` the original to `/smartmet/data/gts/sounding-bufr/world/querydata/`, `mv` the `.bz2` to `/smartmet/editor/in/`.
+4. An `EXIT` trap clears `$TMP/*.sqd*` so partial-failure runs don't leave stale tmp files.
+
+The hourly cleaner keeps only the 2 most-recent `.sqd` and `_sounding_bufr.sqd` files in the output and editor dirs and deletes incoming files (both `sounding/` and `sounding-bufr/`) older than 7 days.
 
 ## Editing rules specific to this repo
 
-- **Version bump = touch `Version:` and add a `%changelog` entry.** Date-based `YY.MM.DD` (e.g. `26.5.21`). The version field currently sits at `17.10.4` but the changelog only carries the `17.10.3` initial entry — there is an inherited mismatch here.
-- **Hardcoded `/smartmet` paths.** Unlike the synop scripts, `dosounding.php` does not fall back to `$HOME` when `/smartmet` is missing. Running it locally for ad-hoc testing requires `mkdir -p /smartmet/...` (with sudo) or editing the constants.
-- **PHP `system()` and `exec()` are unescaped.** Treat changes that introduce variable-derived shell arguments very carefully — at the moment the only externally-influenced value is the glob path, but watch the existing `system("temp2qd -t $TMPDIR/$OUTFILE.txt > …")` pattern when adding logic.
-- **Don't `git push` straight to master.** PR-based flow is the FMI convention even though earlier commits on this repo were direct-to-master.
+- **Version bump = touch `Version:` and add a `%changelog` entry.** Date-based `YY.MM.DD` (e.g. `26.5.21`).
+- **Hardcoded `/smartmet` paths in `dosounding.php`.** Unlike the bash scripts, the PHP does not fall back to `$HOME` when `/smartmet` is missing. Running locally for ad-hoc testing requires `mkdir -p /smartmet/...` (with sudo) or editing the constants. The BUFR script *does* have the `$HOME` fallback.
+- **The BUFR script uses `pbzip2`** (parallel bzip2). `dosounding.php` does not compress — that's a deliberate asymmetry; the cleaner pattern for the PHP path is `_sounding.sqd` not `.bz2`.
+- **PHP `system()` is now `escapeshellarg`-guarded** but the wrapper itself still uses the shell (because of `>` redirection). Don't loosen the escaping if you add arguments derived from input data.
+- **Don't `git push` straight to master.** PR-based flow is the FMI convention even though some earlier commits were direct-to-master.
 
 ## Building the RPM (FMI infrastructure)
 
@@ -41,7 +51,7 @@ Same shape as the sibling `smartmet-data-gts-synop`: the `%install` section expe
 rpmbuild -ba smartmet-data-gts-sounding.spec
 ```
 
-after staging `dosounding.php` into `~/rpmbuild/SOURCES/smartmet-data-gts-sounding/`. End users install via `yum install smartmet-data-gts-sounding`.
+after staging both scripts into `~/rpmbuild/SOURCES/smartmet-data-gts-sounding/`. End users install via `yum install smartmet-data-gts-sounding`.
 
 ## macOS note
 
