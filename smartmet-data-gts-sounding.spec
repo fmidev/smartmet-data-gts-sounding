@@ -1,9 +1,9 @@
 %define smartmetroot /smartmet
 
 Name:           smartmet-data-gts-sounding
-Version:        17.10.4
+Version:        26.5.21
 Release:        1%{?dist}.fmi
-Summary:        SmartMet Data WMO TEMP Format (FM-35)
+Summary:        SmartMet Data WMO TEMP Format (FM-35/36/37) and BUFR
 Group:          System Environment/Base
 License:        MIT
 URL:            https://github.com/fmidev/smartmet-data-gts-sounding
@@ -11,7 +11,6 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:	noarch
 
 Requires:	smartmet-qdtools
-Requires:	bzip2
 Requires:	pbzip2
 Requires:	php
 
@@ -67,6 +66,19 @@ rm -rf $RPM_BUILD_ROOT
 %{smartmetroot}/*
 
 %changelog
+* Thu May 21 2026 Mikko Rauhala <mikko.rauhala@fmi.fi> 26.5.21-1.el9.fmi
+- Add BUFR sounding ingestion (dosounding-bufr.sh) alongside the
+  existing text TEMP flow, with bufrtoqd --subsets and pbzip2
+- Rewrite dosounding.php for safety, correctness, and PHP 8 compat
+  (fix indentation-vs-logic bug, escape shell args, replace shell-out
+  with PHP native, add error handling, drop deprecated ${var} syntax)
+- Compress text TEMP output with pbzip2 too, mirroring the BUFR flow.
+  The .sqd goes to the data tree and the .bz2 to the editor inbox.
+- Correct WMO heading documentation: IU/// is BUFR; TAC TEMP uses
+  US/UK (FM-35), UF/UG (FM-36), UA/UB (FM-37). FM-38 unsupported.
+- Tighten spec: real %description, drop empty stanzas, require pbzip2
+  (and drop now-unused bzip2 dep)
+- Add GitHub Actions workflow that builds RPMs for Rocky 8/9/10
 * Tue Oct 3 2017 Mikko Rauhala <mikko.rauhala@fmi.fi> 17.10.3-1.el7.fmi
 - Initial version
 

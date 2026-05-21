@@ -81,16 +81,25 @@ if (filesize($txtfile) > 0) {
     $exitCode = 0;
     system("temp2qd -t " . escapeshellarg($txtfile) . " > " . escapeshellarg($sqdfile), $exitCode);
     if ($exitCode === 0 && file_exists($sqdfile) && filesize($sqdfile) > 0) {
-        if (!rename($sqdfile, "$OUTDIR/$OUTFILE")) {
-            fwrite(STDERR, "Failed to move $sqdfile to $OUTDIR\n");
-        } elseif (!copy("$OUTDIR/$OUTFILE", "$EDITORDIR/$OUTFILE")) {
-            fwrite(STDERR, "Failed to copy $OUTFILE to $EDITORDIR\n");
+        $bz2tmp = "$sqdfile.bz2";
+        $compressExit = 0;
+        system("pbzip2 -k " . escapeshellarg($sqdfile), $compressExit);
+        if ($compressExit !== 0 || !file_exists($bz2tmp)) {
+            fwrite(STDERR, "pbzip2 failed (exit=$compressExit)\n");
+        } else {
+            if (!rename($sqdfile, "$OUTDIR/$OUTFILE")) {
+                fwrite(STDERR, "Failed to move $sqdfile to $OUTDIR\n");
+            }
+            if (!rename($bz2tmp, "$EDITORDIR/$OUTFILE.bz2")) {
+                fwrite(STDERR, "Failed to move $bz2tmp to $EDITORDIR\n");
+            }
         }
     } else {
         fwrite(STDERR, "temp2qd failed (exit=$exitCode) or produced empty output\n");
     }
 }
 
-if (file_exists($txtfile)) {
-    unlink($txtfile);
+// Clean up anything from this run still in tmp (.txt, .sqd, .sqd.bz2)
+foreach (glob("$TMPDIR/$OUTFILE*") as $stale) {
+    @unlink($stale);
 }
