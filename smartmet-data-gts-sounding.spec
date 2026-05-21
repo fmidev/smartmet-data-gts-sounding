@@ -3,7 +3,7 @@
 Name:           smartmet-data-gts-sounding
 Version:        17.10.4
 Release:        1%{?dist}.fmi
-Summary:        SmartMet Data WMO TEMP Format (FM-35)
+Summary:        SmartMet Data WMO TEMP Format (FM-35/36/37) and BUFR
 Group:          System Environment/Base
 License:        MIT
 URL:            https://github.com/fmidev/smartmet-data-gts-sounding
