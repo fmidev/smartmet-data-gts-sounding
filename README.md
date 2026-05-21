@@ -19,14 +19,16 @@ each format and prunes incoming files older than 7 days.
 
 Route incoming GTS bulletins to the directories below based on WMO heading:
 
-| Format                              | WMO headings                                                                                            | Drop files in                                |
-|-------------------------------------|---------------------------------------------------------------------------------------------------------|----------------------------------------------|
-| GTS WMO TEMP (FM-35/36/37/38, TAC)  | Land `US///` `UK///`, ship `UF///` `UG///`, mobile `UA///` `UB///`, drop `UR///` `UT///`                | `/smartmet/data/incoming/gts/sounding`       |
-| GTS WMO upper-air BUFR              | `IU///`                                                                                                 | `/smartmet/data/incoming/gts/sounding-bufr`  |
+| Format                | WMO headings                                                                          | Drop files in                                |
+|-----------------------|---------------------------------------------------------------------------------------|----------------------------------------------|
+| TAC TEMP, parts A & B | `US///` `UK///` `UF///` `UG///` `UA///` `UB///` `UR///` `UT///`                       | `/smartmet/data/incoming/gts/sounding`       |
+| BUFR upper-air        | `IU///`                                                                               | `/smartmet/data/incoming/gts/sounding-bufr`  |
 
-The TAC path processes only parts A (`TTAA`) and B (`TTBB`); parts C
-and D (headers `UE`/`UM`/`UH`/`UI`/`UC`/`UD`/`UW`/`UX`) are not
-extracted by the PHP script and should not be routed to this directory.
+`dosounding.php` only matches `TTAA` (part A) and `TTBB` (part B)
+blocks — the eight TAC headings above are the ones that carry those
+parts across land/ship/mobile/drop station types. Parts C and D
+(headers `UE`/`UM`/`UH`/`UI`/`UC`/`UD`/`UW`/`UX`) are not extracted
+and should not be routed here.
 
 ## Output
 
