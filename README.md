@@ -40,9 +40,9 @@ dropsonde altitude scheme. Parts C and D (headers
 
 ## Output
 
-- **Text TEMP:** `dosounding.php` extracts `TTAA` and `TTBB` blocks from each incoming file, deduplicates by (location, date, type), and runs `temp2qd` to produce `/smartmet/data/gts/sounding/world/querydata/<timestamp>_gts_world_sounding.sqd`. A copy is dropped into `/smartmet/editor/in/`. Cron output goes to `/smartmet/logs/data/sounding-gts.log`.
-- **BUFR:** `dosounding-bufr.sh` runs `bufrtoqd -C sounding --subsets` over the incoming directory, writing `<timestamp>_gts_world_sounding_bufr.sqd` to `/smartmet/data/gts/sounding-bufr/world/querydata/`, plus a `pbzip2`-compressed copy in `/smartmet/editor/in/`. Logs to `/smartmet/logs/data/sounding-bufr-gts.log`.
+- **Text TEMP:** `dosounding.php` extracts `TTAA` and `TTBB` blocks from each incoming file, deduplicates by (location, date, type), runs `temp2qd` to produce `<timestamp>_gts_world_sounding.sqd`, then `pbzip2 -k`-compresses it. The uncompressed `.sqd` lands in `/smartmet/data/gts/sounding/world/querydata/` and the `.bz2` in `/smartmet/editor/in/`. Cron output goes to `/smartmet/logs/data/sounding-gts.log`.
+- **BUFR:** `dosounding-bufr.sh` runs `bufrtoqd -C sounding --subsets` over the incoming directory, `pbzip2 -k`-compresses the result, and distributes the `.sqd` to `/smartmet/data/gts/sounding-bufr/world/querydata/` and the `.bz2` to `/smartmet/editor/in/`. Logs to `/smartmet/logs/data/sounding-bufr-gts.log`.
 
 ## Requires
 
-`smartmet-qdtools` (provides `temp2qd`, `bufrtoqd`), `bzip2`, `pbzip2`, `php`.
+`smartmet-qdtools` (provides `temp2qd`, `bufrtoqd`), `pbzip2`, `php`.

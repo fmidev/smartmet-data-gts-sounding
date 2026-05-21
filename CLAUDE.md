@@ -24,7 +24,8 @@ cron file.
 3. Regex-extract `TTAA` and `TTBB` blocks (one per report), trimming whitespace.
 4. Group by `messages[location][date][type]`, sort by location → date → type, join with CRLF into `tmp/data/sounding/<timestamp>_gts_world_sounding.sqd.txt`.
 5. Run `temp2qd -t …txt > …sqd` (arguments are `escapeshellarg`'d, exit code captured).
-6. If the `.sqd` is non-empty: `rename` it into `/smartmet/data/gts/sounding/world/querydata/`, `copy()` to `/smartmet/editor/in/`, `unlink()` the text file.
+6. If the `.sqd` is non-empty: `pbzip2 -k` it (creates `.sqd.bz2` alongside), `rename` the `.sqd` into `/smartmet/data/gts/sounding/world/querydata/`, `rename` the `.bz2` into `/smartmet/editor/in/`.
+7. Clean any leftovers matching `$OUTFILE*` from tmp.
 
 **BUFR (`dosounding-bufr.sh`):**
 
@@ -39,7 +40,7 @@ The hourly cleaner keeps only the 2 most-recent `.sqd` and `_sounding_bufr.sqd` 
 
 - **Version bump = touch `Version:` and add a `%changelog` entry.** Date-based `YY.MM.DD` (e.g. `26.5.21`).
 - **Hardcoded `/smartmet` paths in `dosounding.php`.** Unlike the bash scripts, the PHP does not fall back to `$HOME` when `/smartmet` is missing. Running locally for ad-hoc testing requires `mkdir -p /smartmet/...` (with sudo) or editing the constants. The BUFR script *does* have the `$HOME` fallback.
-- **The BUFR script uses `pbzip2`** (parallel bzip2). `dosounding.php` does not compress — that's a deliberate asymmetry; the cleaner pattern for the PHP path is `_sounding.sqd` not `.bz2`.
+- **Both paths compress with `pbzip2`** (parallel bzip2). The uncompressed `.sqd` goes to the data tree; the `.bz2` goes to the editor inbox. The cleaner's `_sounding.sqd` and `_sounding_bufr.sqd` patterns match `.sqd.bz2` via substring, so a single rule covers both.
 - **PHP `system()` is now `escapeshellarg`-guarded** but the wrapper itself still uses the shell (because of `>` redirection). Don't loosen the escaping if you add arguments derived from input data.
 - **Don't `git push` straight to master.** PR-based flow is the FMI convention even though some earlier commits were direct-to-master.
 
