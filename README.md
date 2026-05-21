@@ -19,13 +19,14 @@ each format and prunes incoming files older than 7 days.
 
 Route incoming GTS bulletins to the directories below based on WMO heading:
 
-| Bulletin                       | WMO heading | Drop files in                                |
-|--------------------------------|-------------|----------------------------------------------|
-| GTS WMO TEMP (FM-35, text)     | `IU///`     | `/smartmet/data/incoming/gts/sounding`       |
-| GTS WMO upper-air BUFR         | `IU///`     | `/smartmet/data/incoming/gts/sounding-bufr`  |
+| Format                              | WMO headings                                                                                            | Drop files in                                |
+|-------------------------------------|---------------------------------------------------------------------------------------------------------|----------------------------------------------|
+| GTS WMO TEMP (FM-35/36/37/38, TAC)  | Land `US///` `UK///`, ship `UF///` `UG///`, mobile `UA///` `UB///`, drop `UR///` `UT///`                | `/smartmet/data/incoming/gts/sounding`       |
+| GTS WMO upper-air BUFR              | `IU///`                                                                                                 | `/smartmet/data/incoming/gts/sounding-bufr`  |
 
-Both formats share the WMO designator `IU///`; routing to the two
-incoming directories is up to the local message-switch configuration.
+The TAC path processes only parts A (`TTAA`) and B (`TTBB`); parts C
+and D (headers `UE`/`UM`/`UH`/`UI`/`UC`/`UD`/`UW`/`UX`) are not
+extracted by the PHP script and should not be routed to this directory.
 
 ## Output
 
