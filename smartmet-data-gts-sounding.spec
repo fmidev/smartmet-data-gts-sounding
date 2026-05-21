@@ -16,13 +16,8 @@ Requires:	php
 
 
 %description
-TODO
-
-%prep
-
-%build
-
-%pre
+Reads GTS WMO TEMP (FM-35) sounding bulletins and converts them to
+SmartMet querydata for the data server and the editor.
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -52,9 +47,6 @@ find /smartmet/data/incoming/gts/sounding-bufr -type f -mmin +10080 -delete
 EOF
 
 install -m 755 %_topdir/SOURCES/smartmet-data-gts-sounding/dosounding.php %{buildroot}%{smartmetroot}/run/data/sounding_gts/bin/
-
-
-%post
 
 %clean
 rm -rf $RPM_BUILD_ROOT
