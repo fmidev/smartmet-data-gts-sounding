@@ -38,7 +38,7 @@ echo "TMP: $TMP"
 echo "Sounding File: $OUTFILE"
 
 # Do sounding data
-bufrtoqd -C sounding -p 1005,Sounding --subsets "$IN/" "$OUTFILE"
+bufrtoqd -C sounding -p 1005,Sounding --subsets --roundtohours 1 "$IN/" "$OUTFILE"
 
 if [ -s "$OUTFILE" ]; then
     pbzip2 -k "$OUTFILE"

@@ -1,7 +1,7 @@
 %define smartmetroot /smartmet
 
 Name:           smartmet-data-gts-sounding
-Version:        26.5.21
+Version:        26.9.10
 Release:        1%{?dist}.fmi
 Summary:        SmartMet Data WMO TEMP Format (FM-35/36/37) and BUFR
 Group:          System Environment/Base
@@ -66,6 +66,8 @@ rm -rf $RPM_BUILD_ROOT
 %{smartmetroot}/*
 
 %changelog
+* Thu Sep 10 2026 Elmeri Nurmi <elmeri.nurmi@fmi.fi> 26.9.10-1.el9.fmi
+- Fix rounding of obs time to the nearest hour.
 * Thu May 21 2026 Mikko Rauhala <mikko.rauhala@fmi.fi> 26.5.21-1.el9.fmi
 - Add BUFR sounding ingestion (dosounding-bufr.sh) alongside the
   existing text TEMP flow, with bufrtoqd --subsets and pbzip2
